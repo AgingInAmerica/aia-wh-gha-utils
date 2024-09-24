@@ -96,26 +96,30 @@ PUSH_TO_REGISTRY=${1:-"false"}
 # in order if someone wants to build something in folder_name/ and it has different registry from infra/app.conf.
 CONTAINER_DIR="${2:-infra/}"
 BUILD_CONTEXT="${3:-.}"
-APP_CONFIG_FILE="${4:-GITHUB_WORKSPACE}/${CONTAINER_DIR}app.conf"
+APP_CONFIG_FILE="${4:-${GITHUB_WORKSPACE}/${CONTAINER_DIR}app.conf}"
 CONTAINER_REPO="localreg"
 
+# Ensure APP_CONFIG_FILE is an absolute path
+if [[ ! "$APP_CONFIG_FILE" = /* ]]; then
+  APP_CONFIG_FILE="${GITHUB_WORKSPACE}/${APP_CONFIG_FILE}"
+fi
+
+echo "APP_CONFIG_FILE is set to: ${APP_CONFIG_FILE}"
+
 main(){
- 
+  # Change to GITHUB_WORKSPACE to ensure relative paths work
+  cd "${GITHUB_WORKSPACE}" || exit 1
+
   # Check if app.conf is available and load vars from it
   if [[ -f "${APP_CONFIG_FILE}" ]]; then
     echo "Application Config detected! Loading parameters..."
-    # shellcheck source=${GITHUB_WORKSPACE}/infra/app.conf
     source "${APP_CONFIG_FILE}"
-  
   else
-
     echo ""
     echo "Application Config is not detected!"
     echo ">>> PROCEEDING <<<"
     echo ""
-
   fi
-
 
   # Check if CONTAINER_REPO is available (either from ${APP_CONFIG_FILE} or from env variable)
   if [[ ${CONTAINER_REPO} == "localreg" ]];then
