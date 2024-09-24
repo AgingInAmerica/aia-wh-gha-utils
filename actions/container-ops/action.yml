@@ -17,7 +17,7 @@ inputs:
   app_config_file:
     description: "App config file location"
     required: false
-    defaul: '${GITHUB_WORKSPACE}/${CONTAINER_DIR}app.conf'
+    default: ''
 
 runs:
   using: "composite"
