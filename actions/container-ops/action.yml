@@ -28,6 +28,6 @@ runs:
           ${{ github.action_path }}/../../scripts/container_ops.sh \
              "${{ inputs.push_image }}" \
              "${{ inputs.container_dir }}" \
-             "${{ inputs.app_config_file }}" \
-             "${{ inputs.build_context }}"
+             "${{ inputs.build_context }}" \
+             "${{ inputs.app_config_file }}"
         echo "::endgroup::"
