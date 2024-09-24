@@ -14,6 +14,10 @@ inputs:
     description: 'Image build context'
     required: false
     default: '.'
+  app_config_file:
+    description: "App config file location"
+    required: false
+    defaul: '${GITHUB_WORKSPACE}/${CONTAINER_DIR}app.conf'
 
 runs:
   using: "composite"
@@ -24,5 +28,6 @@ runs:
           ${{ github.action_path }}/../../scripts/container_ops.sh \
              "${{ inputs.push_image }}" \
              "${{ inputs.container_dir }}" \
+             "${{ inputs.app_config_file }}" \
              "${{ inputs.build_context }}"
         echo "::endgroup::"
