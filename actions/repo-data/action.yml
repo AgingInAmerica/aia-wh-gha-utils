@@ -1,11 +1,15 @@
-name: 'Repository data'
-description: 'Fetch repository and organization name'
+name: "Repository data"
+description: "Fetch repository and organization name"
 
 inputs:
   container_dir:
     description: "Container config directory"
     required: false
     default: "infra/"
+  custom_prefix:
+    description: "Custom prefix for APP_VERSION"
+    required: false
+    default: ""
 
 outputs:
   repo_name:
@@ -41,4 +45,4 @@ runs:
   steps:
     - id: repo_data
       shell: bash
-      run: ${{ github.action_path }}/../../scripts/repo_data.sh "${{ inputs.container_dir }}"
+      run: ${{ github.action_path }}/../../scripts/repo_data.sh "${{ inputs.container_dir }}" "${{ inputs.custom_prefix }}"

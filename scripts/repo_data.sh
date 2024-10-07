@@ -16,39 +16,45 @@ set_var() {
 }
 
 resolve_app_version() {
-    # If HEAD_REF is not NULL and Base branch doesn't contain 'pull' - then it's production
-    if [[ -n "${GITHUB_HEAD_REF}" ]]; then
-    	echo " >>> Pull Request Detected."
-        if [[ -z "${GITHUB_REF##main}" ]] || [[ -z "${GITHUB_REF##master}" ]]; then
-            set_var APP_RELEASE_TYPE "Production"
-            set_var APP_VERSION "${GITHUB_HEAD_REF##release/}"
-        fi
-        if [[ -z "${GITHUB_REF##*/pull/*}" ]]; then
-            set_var APP_RELEASE_TYPE "Beta (Pre-release)"
-            set_var APP_VERSION "${GITHUB_HEAD_REF##release/}-rc.${GITHUB_RUN_NUMBER}"
-        fi
+    if [[ -n "${CUSTOM_PREFIX}" ]]; then
+        set_var APP_RELEASE_TYPE "Custom"
+        set_var APP_VERSION "${CUSTOM_PREFIX}-${GITHUB_SHA::7}"
     else
-      if [[ -z "${GITHUB_REF##*main}" ]] || [[ -z "${GITHUB_REF##*master}" ]] || [[ -z "${GITHUB_REF##*dev*}" ]]; then
-        set_var APP_RELEASE_TYPE "Alpha (Debug)"
-        set_var APP_VERSION "alpha-${GITHUB_SHA::7}"
-      fi
-      if [[ -z "${GITHUB_REF##*hotfix}" ]] || [[ -z "${GITHUB_REF##*hf}" ]]; then
-        set_var APP_RELEASE_TYPE "Hotfix"
-        set_var APP_VERSION "hf-${GITHUB_SHA::7}"
-      fi
-      if [[ -z "${GITHUB_REF##*/release/*}" ]]; then
-        set_var APP_RELEASE_TYPE "Beta (Pre-release)"
-        set_var APP_VERSION "${GITHUB_REF##refs/heads/release/}-rc.${GITHUB_RUN_NUMBER}"
-      fi
-      if [[ -z "${GITHUB_REF##*/poc/*}" ]]; then
-        set_var APP_RELEASE_TYPE "Proof of Concept (Experiment)"
-        set_var APP_VERSION "poc-${GITHUB_SHA::7}"
-      fi
-      if [[ -z "${GITHUB_REF##*/tags/*}" ]]; then
-        set_var APP_RELEASE_TYPE "Production"
-        set_var APP_VERSION "${GITHUB_REF##refs/tags/}"
-      fi
+        if [[ -n "${GITHUB_HEAD_REF}" ]]; then
+            echo " >>> Pull Request Detected."
+            if [[ -z "${GITHUB_REF##main}" ]] || [[ -z "${GITHUB_REF##master}" ]]; then
+                set_var APP_RELEASE_TYPE "Production"
+                set_var APP_VERSION "${GITHUB_HEAD_REF##release/}"
+            fi
+            if [[ -z "${GITHUB_REF##*/pull/*}" ]]; then
+                set_var APP_RELEASE_TYPE "Beta (Pre-release)"
+                set_var APP_VERSION "${GITHUB_HEAD_REF##release/}-rc.${GITHUB_RUN_NUMBER}"
+            fi
+        else
+            if [[ -z "${GITHUB_REF##*main}" ]] || [[ -z "${GITHUB_REF##*master}" ]] || [[ -z "${GITHUB_REF##*dev*}" ]]; then
+                set_var APP_RELEASE_TYPE "Alpha (Debug)"
+                set_var APP_VERSION "alpha-${GITHUB_SHA::7}"
+            fi
+            if [[ -z "${GITHUB_REF##*hotfix}" ]] || [[ -z "${GITHUB_REF##*hf}" ]]; then
+                set_var APP_RELEASE_TYPE "Hotfix"
+                set_var APP_VERSION "hf-${GITHUB_SHA::7}"
+            fi
+            if [[ -z "${GITHUB_REF##*/release/*}" ]]; then
+                set_var APP_RELEASE_TYPE "Beta (Pre-release)"
+                set_var APP_VERSION "${GITHUB_REF##refs/heads/release/}-rc.${GITHUB_RUN_NUMBER}"
+            fi
+            if [[ -z "${GITHUB_REF##*/poc/*}" ]]; then
+                set_var APP_RELEASE_TYPE "Proof of Concept (Experiment)"
+                set_var APP_VERSION "poc-${GITHUB_SHA::7}"
+            fi
+            if [[ -z "${GITHUB_REF##*/tags/*}" ]]; then
+                set_var APP_RELEASE_TYPE "Production"
+                set_var APP_VERSION "${GITHUB_REF##refs/tags/}"
+            fi
+        fi
     fi
+    # Ensure APP_REVISION is set
+    set_var "APP_REVISION" "${GITHUB_SHA::7}"
 }
 
 report() {
@@ -87,6 +93,8 @@ END
 # app.conf should have specific key-value pair for example:
 # CONTAINER_REPO=hub.docker.com
 CONTAINER_DIR="${1:-infra/}"
+CUSTOM_PREFIX="${2}"
+
 APP_CONFIG_FILE="${GITHUB_WORKSPACE}/${CONTAINER_DIR}app.conf"
 if [[ -f "${APP_CONFIG_FILE}" ]]; then
     echo "Application Config detected! Loading parameters..."
@@ -103,8 +111,6 @@ APP_REPO="${GITHUB_REPOSITORY}"
 # Resolve repository name and organization name from env variable
 set_var "APP_REPO_ORG" "$(echo "${APP_REPO}" | cut -d '/' -f1)"
 set_var "APP_REPO_NAME" "$(echo "${APP_REPO}"| cut -d '/' -f2)"
-
-
 
 # Resolve App version based on branch and tags parameters
 resolve_app_version
