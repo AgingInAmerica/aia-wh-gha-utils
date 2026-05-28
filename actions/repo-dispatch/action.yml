@@ -41,11 +41,31 @@ runs:
           exit 0
         fi
 
-        sleep 3 # wait for 3 seconds to propagate changes
-        CREATED_AT=$(date --date="4 seconds ago" +%Y-%m-%dT%H:%M:%SZ)
-        WFID=$(gh run list -R "${REPO}" \
-          --json databaseId,event,status,createdAt \
-          -q '.[] | select(.status != "completed" and .event == "repository_dispatch" and .createdAt >= "'"$CREATED_AT"'") | .databaseId'
-        )
+        CREATED_AT=$(date --date="1 minute ago" +%Y-%m-%dT%H:%M:%SZ)
+
+        WFID=""
+
+        for i in {1..20}; do
+          echo "Looking for triggered repository_dispatch workflow run, attempt $i/20..."
+
+          WFID=$(gh run list -R "${REPO}" \
+            --json databaseId,event,status,createdAt \
+            -q '.[] | select(.event == "repository_dispatch" and .createdAt >= "'"$CREATED_AT"'") | .databaseId' \
+            | head -n 1)
+
+          if [[ -n "$WFID" ]]; then
+            echo "Found workflow run ID: $WFID"
+            break
+          fi
+
+          sleep 5
+        done
+
+        if [[ -z "$WFID" ]]; then
+          echo "ERROR: repository_dispatch was sent, but no matching workflow run was found in ${REPO}"
+          echo "Recent workflow runs:"
+          gh run list -R "${REPO}" --limit 10
+          exit 1
+        fi
 
         gh run watch "$WFID" -R "${REPO}" --exit-status 69
